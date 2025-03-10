@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const bcrypt = require("bcrypt"); // 암호화
+const jwt = require("jsonwebtoken"); // 토큰
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,13 +19,13 @@ mongoose
   .catch((err) => console.log(err));
 
 // Mongoose 모델 정의
-const UsersSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    userid: String,
-    userpw: String,
-    nickname: String,
+    uid: String,
+    password: String,
+    name: String,
   },
-  { collection: "users" } // 컬렉션 이름 강제 지정
+  { collection: "users" } // 컬렉션 이름 지정
 );
 
 const PostsSchema = new mongoose.Schema(
@@ -40,69 +42,66 @@ const PostsSchema = new mongoose.Schema(
 );
 
 // 계정 DB
-const User = mongoose.model("User", UsersSchema);
+const User = mongoose.model("User", UserSchema);
 
-// 계정 목록 조회
-app.get("/users", async (req, res) => {
+// 아이디 중복 확인
+app.post("/check-in", async (req, res) => {
+  const uid = req.body.uid;
+
   try {
-    //users 콜렉션의 모든 도큐먼트 리스트를 가져온다.
-    const users = await User.find();
-    console.log(users);
-    res.json(users);
+    const existingUser = await User.findOne({ uid });
+
+    // 아이디가 이미 존재하면 isIdDuplicate를 true로 반환
+    if (existingUser) {
+      return res.json({ isIdDuplicate: true });
+    }
+    res.json({ isIdDuplicate: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.log(err);
+    res.status(500).send({ message: "서버오류" });
   }
 });
 
-// 계정 단건 조회
-app.get("/users/:id", async (req, res) => {
+// 회원가입
+app.post("/join", async (req, res) => {
+  const { uid, password, name } = req.body;
+
   try {
-    const user = await User.findById(req.params.id);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ uid, password: hashedPassword, name });
+    await newUser.save();
+
+    res.status(201).send({ message: "회원가입 성공" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "회원가입 오류" });
+  }
+});
+
+// 로그인
+app.post("/login", async (req, res) => {
+  const { uid, password } = req.body;
+
+  try {
+    const user = await User.findOne({ uid });
+
     if (!user) {
-      return res.status(404).json({ message: "User Not Found" });
+      return res.status(400).json({ message: "사용자가 존재하지 않습니다." });
     }
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// 계정 추가
-app.post("/users", async (req, res) => {
-  try {
-    const { userid, userpw, nickname } = req.body;
-    //새 도큐먼트 객체 만들기
-    const newUser = new User({ userid, userpw, nickname });
-    await newUser.save(); //도큐먼트 저장!
-    res.status(201).json(newUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    // 비밀번호 확인
+    const isMatch = await bcrypt.compare(password, user.password);
 
-// 계정 수정
-app.put("/users/:id", async (req, res) => {
-  try {
-    const { userid, userpw, nickname } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { userid, userpw, nickname },
-      { new: true } //업데이트된 도큐먼트를 리턴한다.
-    );
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User Not Found" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "비밀번호가 틀렸습니다." });
     }
-    res.status(201).json(updatedUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// 계정 삭제
-app.delete("/users/:id", async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: "User Deleted" });
+    const token = jwt.sign({ id: user._id, uid: user.uid }, "secretkey", {
+      expiresIn: "1h",
+    });
+
+    res.json({ message: "로그인 성공", token, userId: user._id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
