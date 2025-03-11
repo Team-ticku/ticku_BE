@@ -18,10 +18,12 @@ app.use(express.json());
     console.log("MongoDB Connected");
 
     // 라우트 모듈 가져오기 (mongoose 연결 성공 후)
+    const authRouter = require("./routes/auth");
     const usersRouter = require("./routes/users");
     const postsRouter = require("./routes/posts");
 
     // 라우트 등록
+    app.use("/auth", authRouter);
     app.use("/users", usersRouter);
     app.use("/posts", postsRouter);
 
