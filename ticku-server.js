@@ -21,11 +21,13 @@ app.use(express.json());
     const authRouter = require("./routes/auth");
     const usersRouter = require("./routes/users");
     const postsRouter = require("./routes/posts");
+    const explainsRouter = require("./routes/explains");
 
     // 라우트 등록
     app.use("/auth", authRouter);
     app.use("/users", usersRouter);
     app.use("/posts", postsRouter);
+    app.use("/explains", explainsRouter);
 
     //서버 실행
     app.listen(PORT, () => {
