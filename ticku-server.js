@@ -18,12 +18,18 @@ app.use(express.json());
     console.log("MongoDB Connected");
 
     // 라우트 모듈 가져오기 (mongoose 연결 성공 후)
+    const authRouter = require("./routes/auth");
     const usersRouter = require("./routes/users");
     const postsRouter = require("./routes/posts");
+    const calensRouter = require("./routes/calens");
+    const searchRouter = require("./routes/search");
 
     // 라우트 등록
+    app.use("/auth", authRouter);
     app.use("/users", usersRouter);
     app.use("/posts", postsRouter);
+    app.use("/calens", calensRouter);
+    app.use("/search", searchRouter);
 
     //서버 실행
     app.listen(PORT, () => {
