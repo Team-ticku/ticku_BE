@@ -24,6 +24,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const authRouter = require("./routes/auth");
     const usersRouter = require("./routes/user");
     const postsRouter = require("./routes/posts");
+    const explainsRouter = require("./routes/explains");
     const calensRouter = require("./routes/calens");
     const searchRouter = require("./routes/search");
 
@@ -31,6 +32,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/auth", authRouter);
     app.use("/user", usersRouter);
     app.use("/posts", postsRouter);
+    app.use("/explains", explainsRouter);
     app.use("/calens", calensRouter);
     app.use("/search", searchRouter);
 
