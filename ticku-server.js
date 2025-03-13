@@ -34,6 +34,8 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const yearResultRouter = require("./routes/yearResult");
     const volumeRouter = require("./routes/volumes");
     const dividendRouter = require("./routes/dividend");
+    const salesyearRouter = require("./routes/salesyear");
+    const quarterlySalesRouter = require("./routes/quarterlySales");
 
     // 라우트 등록
     app.use("/auth", authRouter);
@@ -49,6 +51,8 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/yearResult", yearResultRouter);
     app.use("/volumes", volumeRouter);
     app.use("/dividend", dividendRouter);
+    app.use("/salesyear", salesyearRouter);
+    app.use("/quarterlySales", quarterlySalesRouter);
 
     //서버 실행
     app.listen(PORT, () => {
