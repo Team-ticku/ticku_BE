@@ -33,6 +33,8 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const companyInfoRouter = require("./routes/companyInfo");
     const yearResultRouter = require("./routes/yearResult");
     const volumeRouter = require("./routes/volumes");
+    const dividendRouter = require("./routes/dividend");
+
     // 라우트 등록
     app.use("/auth", authRouter);
     app.use("/user", usersRouter);
@@ -46,6 +48,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/companyInfo", companyInfoRouter);
     app.use("/yearResult", yearResultRouter);
     app.use("/volumes", volumeRouter);
+    app.use("/dividend", dividendRouter);
 
     //서버 실행
     app.listen(PORT, () => {
