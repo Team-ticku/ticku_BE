@@ -29,7 +29,6 @@ router.get("/:stock_code", async (req, res) => {
         .json({ message: "차트 데이터를 찾을 수 없습니다." });
     }
 
-    // Sort quotes in *descending* order by date (most recent first)
     const sortedQuotes = chartResult.quotes.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
