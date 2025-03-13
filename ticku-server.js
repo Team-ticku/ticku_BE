@@ -9,6 +9,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+const path = require("path");
+app.use("/img", express.static(path.join(__dirname, "public/img")));
+
 // MongoDB Atlas 연결 (async/await 사용)
 (async () => {
   try {
@@ -19,17 +22,33 @@ app.use(express.json());
 
     // 라우트 모듈 가져오기 (mongoose 연결 성공 후)
     const authRouter = require("./routes/auth");
-    const usersRouter = require("./routes/users");
+    const usersRouter = require("./routes/user");
     const postsRouter = require("./routes/posts");
+    const explainsRouter = require("./routes/explains");
     const calensRouter = require("./routes/calens");
     const searchRouter = require("./routes/search");
+    const stockDataRouter = require("./routes/stockdata");
+    const allChartRouter = require("./routes/allchartdata");
+    const portfoliosRouter = require("./routes/portfolios");
+    const companyInfoRouter = require("./routes/companyInfo");
+    const yearResultRouter = require("./routes/yearResult");
+    const volumeRouter = require("./routes/volumes");
+    const IndexDataRouter = require("./routes/indexData");
 
     // 라우트 등록
     app.use("/auth", authRouter);
-    app.use("/users", usersRouter);
+    app.use("/user", usersRouter);
     app.use("/posts", postsRouter);
+    app.use("/explains", explainsRouter);
     app.use("/calens", calensRouter);
     app.use("/search", searchRouter);
+    app.use("/stockdata", stockDataRouter);
+    app.use("/allchartdata", allChartRouter);
+    app.use("/portfolios", portfoliosRouter);
+    app.use("/companyInfo", companyInfoRouter);
+    app.use("/yearResult", yearResultRouter);
+    app.use("/volumes", volumeRouter);
+    app.use("/indexData", IndexDataRouter);
 
     //서버 실행
     app.listen(PORT, () => {
