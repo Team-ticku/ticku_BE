@@ -29,6 +29,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const searchRouter = require("./routes/search");
     const stockDataRouter = require("./routes/stockdata");
     const allChartRouter = require("./routes/allchartdata");
+    const portfoliosRouter = require("./routes/portfolios");
     const companyInfoRouter = require("./routes/companyInfo");
     const yearResultRouter = require("./routes/yearResult");
 
@@ -41,6 +42,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/search", searchRouter);
     app.use("/stockdata", stockDataRouter);
     app.use("/allchartdata", allChartRouter);
+    app.use("/portfolios", portfoliosRouter);
     app.use("/companyInfo", companyInfoRouter);
     app.use("/yearResult", yearResultRouter);
 
