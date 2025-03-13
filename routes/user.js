@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 
 const User = require("../models/User");
+const Favorites = require("../models/Favorites");
 
 // 사용자 정의 스토리지 엔진 생성
 const storage = multer.diskStorage({
@@ -51,15 +52,8 @@ const upload = multer({
 router.use(express.urlencoded({ extended: true })); // form-data 파싱 가능
 router.use(express.static("public")); // 정적 파일 제공
 
-/*app.post("/join", upload.single("file"), (req, res) => {
-  console.log(`File uploaded: ${req.file.filename}`);
-  console.log(`id: ${req.body.id}`); // req.body.id 사용
-  console.log(`pw: ${req.body.pw}`); // req.body.pw 사용
-  res.status(200).send("File uploaded successfully.");
-});*/
-
 // 사용자 정보 불러오기
-router.get("/:userId", async (req, res) => {
+router.get("/info/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -76,31 +70,19 @@ router.get("/:userId", async (req, res) => {
 
 // 사용자 수정
 router.put("/profile-change", upload.single("image"), async (req, res) => {
-  console.log("프로필 업데이트 요청 도착"); // 요청이 들어오는지 확인
-  console.log("받은 파일:", req.file);
-  console.log("받은 데이터:", req.body);
-  //const { userId, name, image } = req.body;
-
   const { userId, name } = req.body;
   const imagePath = req.file ? `/img/${req.file.filename}` : null;
   console.log("imagePath : " + imagePath);
-
-  //const finalImagePath = imagePath || "/img/profile_picture.png";
-  //const finalImagePath = imagePath;
 
   try {
     const updateData = { name };
     if (imagePath) {
       updateData.image = imagePath;
     }
-    //const updateData = { name, finalImagePath };
 
-    const updateUser = await User.findByIdAndUpdate(
-      userId,
-      //{ name, image },
-      updateData,
-      { new: true }
-    );
+    const updateUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
 
     if (!updateUser) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
@@ -109,6 +91,38 @@ router.put("/profile-change", upload.single("image"), async (req, res) => {
     res.json(updateUser);
   } catch (err) {
     return res.status(500).json({ message: "서버 오류", err });
+  }
+});
+
+router.get("/favorites", async (req, res) => {
+  const userId = req.query.userId;
+
+  try {
+    const favComList = await Favorites.find({ userId: userId });
+    //const favComList = await Favorites.find();
+
+    res.json(favComList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 즐겨찾기 삭제 (isFavorite가 false일 때)
+router.delete("/delete-favorite", async (req, res) => {
+  const { companyId } = req.body;
+
+  try {
+    // isFavorite가 false일 때 DB에서 삭제
+    const result = await Favorites.findByIdAndDelete(companyId);
+    if (!result) {
+      return res.status(404).json({ message: "회사를 찾을 수 없습니다." });
+    }
+    return res.status(200).json({ message: "회사가 삭제되었습니다." });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "DB에서 삭제하는 데 실패했습니다." });
   }
 });
 
