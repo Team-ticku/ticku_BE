@@ -6,6 +6,7 @@ const fs = require("fs");
 
 const User = require("../models/User");
 const Favorites = require("../models/Favorites");
+const ScrapNews = require("../models/ScrapNews");
 
 // 사용자 정의 스토리지 엔진 생성
 const storage = multer.diskStorage({
@@ -94,6 +95,39 @@ router.put("/profile-change", upload.single("image"), async (req, res) => {
   }
 });
 
+// 스크랩한 뉴스 가져오기
+router.get("/scrapnews", async (req, res) => {
+  const userId = req.query.userId;
+
+  try {
+    const newsList = await ScrapNews.find({ userId: userId });
+    //const newsList = await ScrapNews.find();
+    res.json(newsList);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 스크랩한 뉴스 삭제하기
+router.delete("/delete-scrapnews", async (req, res) => {
+  const { newsId } = req.body;
+
+  if (!newsId) {
+    return res.status(400).json({ message: "삭제할 뉴스 ID가 필요합니다." });
+  }
+
+  try {
+    const result = await ScrapNews.findByIdAndDelete(newsId);
+    if (!result) {
+      return res.status(404).json({ message: "해당 뉴스가 없습니다." });
+    }
+    return res.json({ message: "뉴스가 삭제됐습니다." });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// 관심 기업 가져오기
 router.get("/favorites", async (req, res) => {
   const userId = req.query.userId;
 
@@ -107,7 +141,7 @@ router.get("/favorites", async (req, res) => {
   }
 });
 
-// 즐겨찾기 삭제 (isFavorite가 false일 때)
+// 관심 기업 즐겨찾기 삭제
 router.delete("/delete-favorite", async (req, res) => {
   const { companyId } = req.body;
 

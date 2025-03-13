@@ -30,6 +30,8 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const stockDataRouter = require("./routes/stockdata");
     const allChartRouter = require("./routes/allchartdata");
     const portfoliosRouter = require("./routes/portfolios");
+    const companyInfoRouter = require("./routes/companyInfo");
+    const yearResultRouter = require("./routes/yearResult");
 
     // 라우트 등록
     app.use("/auth", authRouter);
@@ -41,6 +43,8 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/stockdata", stockDataRouter);
     app.use("/allchartdata", allChartRouter);
     app.use("/portfolios", portfoliosRouter);
+    app.use("/companyInfo", companyInfoRouter);
+    app.use("/yearResult", yearResultRouter);
 
     //서버 실행
     app.listen(PORT, () => {
