@@ -6,7 +6,6 @@ const { Company } = require("../models/Company");
 router.get("/", async (req, res) => {
   const { query } = req.query; // 클라이언트에서 보낸 검색어
 
-  console.log("검색 요청 수신:", query); // 추가
   if (!query) {
     return res.status(400).json({ message: "검색어를 입력하세요." });
   }
