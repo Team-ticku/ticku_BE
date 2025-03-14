@@ -7,6 +7,8 @@ const fs = require("fs");
 const User = require("../models/User");
 const Favorites = require("../models/Favorites");
 const ScrapNews = require("../models/ScrapNews");
+const Portfolio = require("../models/Portfolio");
+const { error } = require("console");
 
 // 사용자 정의 스토리지 엔진 생성
 const storage = multer.diskStorage({
@@ -160,71 +162,32 @@ router.delete("/delete-favorite", async (req, res) => {
   }
 });
 
-// 계정 목록 조회
-/*router.get("/", async (req, res) => {
+// 내 포트폴리오 가져오기
+router.get("/myportfolio", async (req, res) => {
+  const userId = req.query.userId;
+
   try {
-    //users 콜렉션의 모든 도큐먼트 리스트를 가져온다.
-    const users = await User.find();
-    console.log(users);
-    res.json(users);
+    const portfolioList = await Portfolio.find({ userId: userId });
+    res.json(portfolioList);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    return res.status(500).json({ message: err.message });
   }
 });
 
-// 계정 단건 조회
-router.get("/:id", async (req, res) => {
+// 내 포트폴리오 핀 수정
+router.put("/myportfolio-change", async (req, res) => {
+  const { id, userId } = req.body;
+
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: "User Not Found" });
-    }
-    res.status(200).json(user);
+    await Portfolio.updateMany({ userId }, { $set: { isPinned: false } });
+    await Portfolio.findByIdAndUpdate(id, { isPinned: true });
+    res.json({ message: "핀 상태가 업데이트 되었습니다." });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "핀 수정 실패" });
   }
 });
-
-// 계정 추가
-router.post("/", async (req, res) => {
-  try {
-    const { userid, userpw, nickname } = req.body;
-    //새 도큐먼트 객체 만들기
-    const newUser = new User({ userid, userpw, nickname });
-    await newUser.save(); //도큐먼트 저장!
-    res.status(201).json(newUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 계정 수정
-router.put("/:id", async (req, res) => {
-  try {
-    const { userid, userpw, nickname } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { userid, userpw, nickname },
-      { new: true } //업데이트된 도큐먼트를 리턴한다.
-    );
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User Not Found" });
-    }
-    res.status(201).json(updatedUser);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 계정 삭제
-router.delete("/:id", async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: "User Deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});*/
 
 // 라우터를 외부로 보냄
 module.exports = router;
