@@ -23,7 +23,6 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     // 라우트 모듈 가져오기 (mongoose 연결 성공 후)
     const authRouter = require("./routes/auth");
     const usersRouter = require("./routes/user");
-    const postsRouter = require("./routes/posts");
     const explainsRouter = require("./routes/explains");
     const calensRouter = require("./routes/calens");
     const searchRouter = require("./routes/search");
@@ -43,11 +42,9 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const bookmark = require("./routes/bookmark");
     const communityRouter = require("./routes/community");
 
-
     // 라우트 등록
     app.use("/auth", authRouter);
     app.use("/user", usersRouter);
-    app.use("/posts", postsRouter);
     app.use("/explains", explainsRouter);
     app.use("/calens", calensRouter);
     app.use("/search", searchRouter);
