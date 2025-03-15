@@ -39,6 +39,9 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const quarterlySalesRouter = require("./routes/quarterlySales");
     const searchRankingRouter = require("./routes/searchRanking");
     const newsRouter = require("./routes/news");
+    const star = require("./routes/star");
+    const bookmark = require("./routes/bookmark");
+    const communityRouter = require("./routes/community");
 
     // 라우트 등록
     app.use("/auth", authRouter);
@@ -59,6 +62,13 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/quarterlySales", quarterlySalesRouter);
     app.use("/searchRanking", searchRankingRouter);
     app.use("/news", newsRouter);
+    app.use("/star", star);
+    app.use("/bookmark", bookmark);
+    app.use("/community", communityRouter);
+    app.use(
+      "/postImages",
+      express.static(path.join(__dirname, "public/postImages"))
+    );
 
     //서버 실행
     app.listen(PORT, () => {
