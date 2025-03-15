@@ -9,7 +9,6 @@ const User = require("../models/User");
 const Favorites = require("../models/Favorites");
 const ScrapNews = require("../models/ScrapNews");
 const Portfolio = require("../models/Portfolio");
-const { error } = require("console");
 
 // 사용자 정의 스토리지 엔진 생성
 const storage = multer.diskStorage({
@@ -127,55 +126,16 @@ router.get("/scrapnews", async (req, res) => {
   }
 });
 
-// 스크랩한 뉴스 삭제하기
-router.delete("/delete-scrapnews", async (req, res) => {
-  const { newsId } = req.body;
-
-  if (!newsId) {
-    return res.status(400).json({ message: "삭제할 뉴스 ID가 필요합니다." });
-  }
-
-  try {
-    const result = await ScrapNews.findByIdAndDelete(newsId);
-    if (!result) {
-      return res.status(404).json({ message: "해당 뉴스가 없습니다." });
-    }
-    return res.json({ message: "뉴스가 삭제됐습니다." });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
 // 관심 기업 가져오기
 router.get("/favorites", async (req, res) => {
   const userId = req.query.userId;
 
   try {
     const favComList = await Favorites.find({ userId: userId });
-    //const favComList = await Favorites.find();
 
     res.json(favComList);
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-});
-
-// 관심 기업 즐겨찾기 삭제
-router.delete("/delete-favorite", async (req, res) => {
-  const { companyId } = req.body;
-
-  try {
-    // isFavorite가 false일 때 DB에서 삭제
-    const result = await Favorites.findByIdAndDelete(companyId);
-    if (!result) {
-      return res.status(404).json({ message: "회사를 찾을 수 없습니다." });
-    }
-    return res.status(200).json({ message: "회사가 삭제되었습니다." });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "DB에서 삭제하는 데 실패했습니다." });
   }
 });
 
@@ -202,7 +162,7 @@ router.put("/myportfolio-change", async (req, res) => {
     res.json({ message: "핀 상태가 업데이트 되었습니다." });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "핀 수정 실패" });
+    res.status(500).json({ message: err.message });
   }
 });
 

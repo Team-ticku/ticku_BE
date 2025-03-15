@@ -40,6 +40,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const searchRankingRouter = require("./routes/searchRanking");
     const newsRouter = require("./routes/news");
     const star = require("./routes/star");
+    const bookmark = require("./routes/bookmark");
 
     // 라우트 등록
     app.use("/auth", authRouter);
@@ -61,6 +62,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     app.use("/searchRanking", searchRankingRouter);
     app.use("/news", newsRouter);
     app.use("/star", star);
+    app.use("/bookmark", bookmark);
 
     //서버 실행
     app.listen(PORT, () => {
