@@ -1,20 +1,30 @@
 const mongoose = require("mongoose");
 
-const PostsSchema = new mongoose.Schema(
+const CommentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  content: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const PostSchema = new mongoose.Schema(
   {
-    nickname: String,
-    title: String,
-    content: String,
-    cate: String,
-    img: String,
-    like: Number,
-    comments: [{ content: String, nickname: String }],
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    name: { type: String, required: true },
+    anonymous: { type: Boolean, required: true },
+    tag: { type: String, required: true },
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    image: { type: String, default: null },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // 좋아요 누른 유저 ID 배열
+    comments: [CommentSchema], // 댓글을 서브 문서로 저장
   },
-  { collection: "posts" } // 컬렉션 이름 강제 지정
+  { collection: "posts", timestamps: true }
 );
 
-// 커뮤니티 포스트
-const Post = mongoose.model("Post", PostsSchema);
+const Post = mongoose.model("Post", PostSchema);
 
-// Post 모델 외부 내보내기
 module.exports = Post;
