@@ -41,6 +41,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const star = require("./routes/star");
     const bookmark = require("./routes/bookmark");
     const communityRouter = require("./routes/community");
+>>>>>>>>> Temporary merge branch 2
 
     // 라우트 등록
     app.use("/auth", authRouter);
