@@ -44,8 +44,11 @@ router.get("/:corp_code", async (req, res) => {
 
     const items = result.rss.channel.item;
 
+    // 10개만 보내기
+    const slicedItems = items.slice(0, 10);
+
     const newsData = await Promise.all(
-      items.map(async (item) => {
+      slicedItems.map(async (item) => {
         let content = item.description || "";
         let sourceName = "";
         let imageUrl = "";

@@ -2,20 +2,18 @@ const mongoose = require("mongoose");
 
 const ScrapNewsSchema = new mongoose.Schema(
   {
-    title: String,
-    content: String,
-    hasImage: Boolean,
-    image: String,
-    sourceName: String,
-    sourceImage: String,
-    defaultBookmarked: Boolean,
-    userId: String,
+    title: { type: String, required: true },
+    link: { type: String, required: true }, // 링크 추가
+    pubDate: { type: Date, required: true }, // 발행일 (Date 타입)
+    sourceName: { type: String, required: true },
+    isMarked: Boolean,
+    userId: { type: String, required: true },
   },
   { collection: "scrap_news" }
 );
 
-// 계정 DB
-const ScrapNews = mongoose.model("ScrapNews", ScrapNewsSchema);
+// userId와 link 조합에 대한 unique 제약 조건 (선택 사항)
+ScrapNewsSchema.index({ userId: 1, link: 1 }, { unique: true, sparse: true });
 
-// User 모델 외부로 내보내기기
+const ScrapNews = mongoose.model("ScrapNews", ScrapNewsSchema);
 module.exports = ScrapNews;
