@@ -1,63 +1,46 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+require("dotenv").config();
 
 const User = require("../models/User");
 const Favorites = require("../models/Favorites");
 const ScrapNews = require("../models/ScrapNews");
 const Portfolio = require("../models/Portfolio");
-const { error } = require("console");
 
-// 사용자 정의 스토리지 엔진 생성
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = "public/img/"; // 업로드 폴더 경로
+// Cloudinary 설정
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-    // 폴더가 없으면 폴더를 생성
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath);
-    }
-
-    cb(null, uploadPath); // 업로드 경로 전달
-  },
-
-  // 저장할 파일 이름 지정
-  filename: (req, file, cb) => {
-    // 변경된 파일 이름을 전달
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
+// Cloudinary 스토리지 설정
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "profile_images", // 업로드할 폴더
+    allowed_formats: ["jpg", "jpeg", "png"], // 허용되는 이미지 포맷
   },
 });
 
-// 파일 확장자 필터 정의
-const fileFilter = (req, file, cb) => {
-  const allowedFileTypes = [".jpg", ".jpeg", ".png"];
-
-  // 파일의 확장자와 허용된 확장자를 비교
-  if (allowedFileTypes.includes(path.extname(file.originalname))) {
-    cb(null, true);
-  } else {
-    cb(new Error("Invalid file type"));
-  }
-};
-
-// Multer 설정: 사용자 정의 스토리지를 설정하고 파일 크기 제한 및 파일 필터링 적용
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1024 * 1024 * 5 }, // 5MB 크기 제한
-  fileFilter: fileFilter,
-});
-
-router.use(express.urlencoded({ extended: true })); // form-data 파싱 가능
-router.use(express.static("public")); // 정적 파일 제공
+// Multer 설정
+const upload = multer({ storage });
 
 // 사용자 정보 불러오기
 router.get("/info/:userId", async (req, res) => {
   const { userId } = req.params;
+
+  // userId가 ObjectId 형식인지 확인
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
 
   try {
     const user = await User.findById(userId);
@@ -71,27 +54,25 @@ router.get("/info/:userId", async (req, res) => {
   }
 });
 
-// 사용자 수정
+// 사용자 수정 (프로필 이미지 포함)
 router.put("/profile-change", upload.single("image"), async (req, res) => {
   const { userId, name } = req.body;
-  const imagePath = req.file ? `/img/${req.file.filename}` : null;
-  console.log("imagePath : " + imagePath);
+  const imageUrl = req.file ? req.file.path : null; // Cloudinary에서 반환된 이미지 URL
 
   try {
     const updateData = { name };
-    if (imagePath) {
-      updateData.image = imagePath;
+    if (imageUrl) {
+      updateData.image = imageUrl;
     }
 
-    const updateUser = await User.findByIdAndUpdate(userId, updateData, {
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
       new: true,
     });
-
-    if (!updateUser) {
+    if (!updatedUser) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    res.json(updateUser);
+    res.json(updatedUser);
   } catch (err) {
     return res.status(500).json({ message: "서버 오류", err });
   }
@@ -101,31 +82,15 @@ router.put("/profile-change", upload.single("image"), async (req, res) => {
 router.get("/scrapnews", async (req, res) => {
   const userId = req.query.userId;
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
+
   try {
-    const newsList = await ScrapNews.find({ userId: userId });
-    //const newsList = await ScrapNews.find();
+    const newsList = await ScrapNews.find({ userId });
     res.json(newsList);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 스크랩한 뉴스 삭제하기
-router.delete("/delete-scrapnews", async (req, res) => {
-  const { newsId } = req.body;
-
-  if (!newsId) {
-    return res.status(400).json({ message: "삭제할 뉴스 ID가 필요합니다." });
-  }
-
-  try {
-    const result = await ScrapNews.findByIdAndDelete(newsId);
-    if (!result) {
-      return res.status(404).json({ message: "해당 뉴스가 없습니다." });
-    }
-    return res.json({ message: "뉴스가 삭제됐습니다." });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -134,31 +99,10 @@ router.get("/favorites", async (req, res) => {
   const userId = req.query.userId;
 
   try {
-    const favComList = await Favorites.find({ userId: userId });
-    //const favComList = await Favorites.find();
-
+    const favComList = await Favorites.find({ userId });
     res.json(favComList);
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-});
-
-// 관심 기업 즐겨찾기 삭제
-router.delete("/delete-favorite", async (req, res) => {
-  const { companyId } = req.body;
-
-  try {
-    // isFavorite가 false일 때 DB에서 삭제
-    const result = await Favorites.findByIdAndDelete(companyId);
-    if (!result) {
-      return res.status(404).json({ message: "회사를 찾을 수 없습니다." });
-    }
-    return res.status(200).json({ message: "회사가 삭제되었습니다." });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "DB에서 삭제하는 데 실패했습니다." });
   }
 });
 
@@ -167,7 +111,7 @@ router.get("/myportfolio", async (req, res) => {
   const userId = req.query.userId;
 
   try {
-    const portfolioList = await Portfolio.find({ userId: userId });
+    const portfolioList = await Portfolio.find({ userId });
     res.json(portfolioList);
   } catch (err) {
     console.error(err);
@@ -185,9 +129,57 @@ router.put("/myportfolio-change", async (req, res) => {
     res.json({ message: "핀 상태가 업데이트 되었습니다." });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "핀 수정 실패" });
+    res.status(500).json({ message: err.message });
   }
 });
 
-// 라우터를 외부로 보냄
+router.post("/scrapnews", async (req, res) => {
+  const { userId, title, link, pubDate, sourceName, isMarked } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
+
+  const receivedDate = new Date(pubDate);
+  if (isNaN(receivedDate.getTime())) {
+    return res.status(400).json({ message: "잘못된 날짜 형식입니다." });
+  }
+
+  if (!userId || !title || !link || !pubDate || !sourceName) {
+    return res.status(400).json({ message: "필수 정보가 누락되었습니다." });
+  }
+
+  try {
+    if (isMarked) {
+      const existingNews = await ScrapNews.findOne({ userId, link });
+      if (existingNews) {
+        return res.status(409).json({ message: "이미 스크랩된 뉴스입니다." });
+      }
+
+      const newScrapNews = new ScrapNews({
+        userId,
+        title,
+        link,
+        pubDate: receivedDate,
+        sourceName,
+      });
+      await newScrapNews.save();
+      res
+        .status(201)
+        .json({ message: "뉴스가 스크랩되었습니다.", news: newScrapNews });
+    } else {
+      const deletedNews = await ScrapNews.findOneAndDelete({ userId, link });
+      if (!deletedNews) {
+        return res
+          .status(404)
+          .json({ message: "스크랩된 뉴스를 찾을 수 없습니다." });
+      }
+      res.status(200).json({ message: "뉴스 스크랩이 취소되었습니다." });
+    }
+  } catch (error) {
+    console.error("뉴스 스크랩/취소 중 오류:", error);
+    res.status(500).json({ message: "서버 오류", error: error.message });
+  }
+});
+
 module.exports = router;
