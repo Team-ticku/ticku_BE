@@ -43,6 +43,7 @@ app.use("/img", express.static(path.join(__dirname, "public/img")));
     const bookmark = require("./routes/bookmark");
     const communityRouter = require("./routes/community");
 
+
     // 라우트 등록
     app.use("/auth", authRouter);
     app.use("/user", usersRouter);

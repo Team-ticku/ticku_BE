@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -8,7 +9,6 @@ const User = require("../models/User");
 const Favorites = require("../models/Favorites");
 const ScrapNews = require("../models/ScrapNews");
 const Portfolio = require("../models/Portfolio");
-const { error } = require("console");
 
 // 사용자 정의 스토리지 엔진 생성
 const storage = multer.diskStorage({
@@ -57,10 +57,17 @@ router.use(express.static("public")); // 정적 파일 제공
 
 // 사용자 정보 불러오기
 router.get("/info/:userId", async (req, res) => {
+  // authenticateToken 미들웨어 제거
+
   const { userId } = req.params;
 
+  // userId가 ObjectId 형식인지 확인
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId); // userId를 사용하여 사용자 정보 조회
     if (!user) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
@@ -99,33 +106,23 @@ router.put("/profile-change", upload.single("image"), async (req, res) => {
 
 // 스크랩한 뉴스 가져오기
 router.get("/scrapnews", async (req, res) => {
+  // 미들웨어 제거
   const userId = req.query.userId;
+  // userId가 ObjectId 형식인지 확인
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
+
+  // *** 주의: 여기서는 userId를 신뢰합니다.  실제 서비스에서는 이렇게 하면 안 됩니다. ***
+  // if (req.user.id !== userId) { // 이 부분을 제거하거나 주석 처리
+  //   return res.status(403).json({ message: '권한이 없습니다.' });
+  // }
 
   try {
     const newsList = await ScrapNews.find({ userId: userId });
-    //const newsList = await ScrapNews.find();
     res.json(newsList);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 스크랩한 뉴스 삭제하기
-router.delete("/delete-scrapnews", async (req, res) => {
-  const { newsId } = req.body;
-
-  if (!newsId) {
-    return res.status(400).json({ message: "삭제할 뉴스 ID가 필요합니다." });
-  }
-
-  try {
-    const result = await ScrapNews.findByIdAndDelete(newsId);
-    if (!result) {
-      return res.status(404).json({ message: "해당 뉴스가 없습니다." });
-    }
-    return res.json({ message: "뉴스가 삭제됐습니다." });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message }); // 수정된 부분
   }
 });
 
@@ -135,30 +132,10 @@ router.get("/favorites", async (req, res) => {
 
   try {
     const favComList = await Favorites.find({ userId: userId });
-    //const favComList = await Favorites.find();
 
     res.json(favComList);
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-});
-
-// 관심 기업 즐겨찾기 삭제
-router.delete("/delete-favorite", async (req, res) => {
-  const { companyId } = req.body;
-
-  try {
-    // isFavorite가 false일 때 DB에서 삭제
-    const result = await Favorites.findByIdAndDelete(companyId);
-    if (!result) {
-      return res.status(404).json({ message: "회사를 찾을 수 없습니다." });
-    }
-    return res.status(200).json({ message: "회사가 삭제되었습니다." });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "DB에서 삭제하는 데 실패했습니다." });
   }
 });
 
@@ -185,7 +162,66 @@ router.put("/myportfolio-change", async (req, res) => {
     res.json({ message: "핀 상태가 업데이트 되었습니다." });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "핀 수정 실패" });
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/scrapnews", async (req, res) => {
+  const { userId, title, link, pubDate, sourceName, isMarked } = req.body;
+
+  // userId가 ObjectId 형식인지 확인
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "잘못된 사용자 ID 형식입니다." });
+  }
+
+  // pubDate를 Date 객체로 변환
+  const receivedDate = new Date(pubDate);
+  if (isNaN(receivedDate.getTime())) {
+    return res.status(400).json({ message: "잘못된 날짜 형식입니다." });
+  }
+
+  // *** 주의: 여기서는 userId를 신뢰합니다.  실제 서비스에서는 이렇게 하면 안 됩니다. ***
+  // if (req.user.id !== userId) { // 이 부분을 제거하거나 주석 처리
+  //   return res.status(403).json({ message: '권한이 없습니다.' });
+  // }
+
+  if (!userId || !title || !link || !pubDate || !sourceName) {
+    return res.status(400).json({ message: "필수 정보가 누락되었습니다." });
+  }
+
+  try {
+    if (isMarked) {
+      // 스크랩 (DB에 추가)
+      const existingNews = await ScrapNews.findOne({ userId, link });
+      if (existingNews) {
+        return res.status(409).json({ message: "이미 스크랩된 뉴스입니다." });
+      }
+
+      const newScrapNews = new ScrapNews({
+        userId,
+        title,
+        link,
+        pubDate: receivedDate,
+        sourceName,
+      });
+      await newScrapNews.save();
+      res
+        .status(201)
+        .json({ message: "뉴스가 스크랩되었습니다.", news: newScrapNews });
+    } else {
+      // 스크랩 취소 (DB에서 제거)
+      const deletedNews = await ScrapNews.findOneAndDelete({ userId, link });
+      if (!deletedNews) {
+        return res
+          .status(404)
+          .json({ message: "스크랩된 뉴스를 찾을 수 없습니다." });
+      }
+
+      res.status(200).json({ message: "뉴스 스크랩이 취소되었습니다." });
+    }
+  } catch (error) {
+    console.error("뉴스 스크랩/취소 중 오류:", error);
+    res.status(500).json({ message: "서버 오류", error: error.message });
   }
 });
 
