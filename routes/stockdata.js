@@ -6,13 +6,6 @@ router.get("/:stockCode", async (req, res) => {
   try {
     const stockCode = req.params.stockCode;
 
-    // 어제 날짜 구하기 (한국 시간 기준)
-    const today = new Date();
-    today.setHours(today.getHours() + 9); // 한국 시간
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayString = yesterday.toISOString().split("T")[0];
-
     const chartResult = await yahooFinance.chart(`${stockCode}.KS`, {
       period1: "2024-01-01", // 적절하게 수정
     });
@@ -26,44 +19,43 @@ router.get("/:stockCode", async (req, res) => {
     let todayPrice = null;
     let yesterdayClose = null;
 
-    const todayData = chartResult.quotes
-      .map((q) => ({
-        ...q,
-        date: new Date(
-          new Date(q.date).setHours(new Date(q.date).getHours() + 9)
-        ),
-      })) // UTC -> KST
-      .filter(
-        (q) =>
-          q.date.toISOString().split("T")[0] ===
-            today.toISOString().split("T")[0] && q.open !== null
-      );
+    // UTC -> KST 변환 및 null 값 없는 데이터 필터링 함수
+    const processQuoteData = (quotes) =>
+      quotes
+        .map((q) => ({
+          ...q,
+          date: new Date(
+            new Date(q.date).setHours(new Date(q.date).getHours() + 9)
+          ),
+        }))
+        .filter((q) => q.close !== null); // close 값이 null이 아닌 데이터만 필터
 
-    const yesterdayData = chartResult.quotes
-      .map((q) => ({
-        ...q,
-        date: new Date(
-          new Date(q.date).setHours(new Date(q.date).getHours() + 9)
-        ),
-      })) // UTC -> KST
-      .filter(
-        (q) =>
-          q.date.toISOString().split("T")[0] === yesterdayString &&
-          q.open !== null
-      );
+    const allData = processQuoteData(chartResult.quotes); // 모든 quote 데이터 처리 (null 제거)
 
-    if (todayData.length > 0) {
-      todayPrice = todayData[todayData.length - 1].close;
-    } else {
-      yesterdayClose =
-        yesterdayData.length > 0
-          ? yesterdayData[yesterdayData.length - 1].close
-          : null;
-      todayPrice = yesterdayClose;
+    // todayPrice 찾기 (가장 최근 데이터)
+    if (allData.length > 0) {
+      todayPrice = allData[allData.length - 1].close;
     }
 
-    if (yesterdayData.length > 0 && !yesterdayClose) {
-      yesterdayClose = yesterdayData[yesterdayData.length - 1].close;
+    // yesterdayClose 찾기 (todayPrice 바로 전 데이터)
+    if (todayPrice !== null && allData.length > 1) {
+      yesterdayClose = allData[allData.length - 2].close; //마지막 전 close값
+    }
+    // yesterdayClose가 null이면, yesterdayData를 검색
+    if (yesterdayClose === null) {
+      // 어제 날짜 구하기 (한국 시간 기준)
+      const today = new Date();
+      today.setHours(today.getHours() + 9); // 한국 시간
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayString = yesterday.toISOString().split("T")[0];
+
+      const yesterdayData = allData.filter(
+        (q) => q.date.toISOString().split("T")[0] === yesterdayString
+      );
+      if (yesterdayData.length > 0) {
+        yesterdayClose = yesterdayData[yesterdayData.length - 1].close;
+      }
     }
 
     let change = null;
