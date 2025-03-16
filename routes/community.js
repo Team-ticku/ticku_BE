@@ -149,4 +149,59 @@ router.post("/:postId/comments", async (req, res) => {
   }
 });
 
+// 게시글 삭제 API 추가
+router.delete("/:postId", async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "게시글을 찾을 수 없습니다." });
+    }
+
+    await Post.findByIdAndDelete(postId);
+    res.json({ message: "게시글이 삭제되었습니다." });
+  } catch (err) {
+    res.status(500).json({ error: "게시글 삭제에 실패했습니다." });
+  }
+});
+
+// 게시글 수정 API 추가
+router.put("/:postId", upload.single("image"), async (req, res) => {
+  const { postId } = req.params;
+  const { userId, tag, title, content, anonymous } = req.body;
+  const image = req.file ? req.file.path : null; // 업로드된 이미지가 있으면 그 경로를 저장
+
+  if (!userId || !tag || !title || !content || anonymous === undefined) {
+    console.log(userId);
+    console.log(tag);
+    console.log(title);
+    console.log(content);
+    console.log(anonymous);
+    return res.status(400).json({ error: "모든 필드를 채워주세요." });
+  }
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "해당 게시글을 찾을 수 없습니다." });
+    }
+
+    // 수정할 게시글 업데이트
+    post.title = title;
+    post.content = content;
+    post.tag = tag;
+    post.anonymous = anonymous;
+    if (image) {
+      post.image = image; // 새 이미지를 저장
+    }
+
+    // 수정된 게시글 저장
+    await post.save();
+    res.json(post); // 수정된 게시글 반환
+  } catch (err) {
+    res.status(500).json({ error: "게시글 수정에 실패했습니다." });
+  }
+});
+
 module.exports = router;
