@@ -1,0 +1,1 @@
+web: node ticku-server.js
