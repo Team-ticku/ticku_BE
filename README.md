@@ -1,6 +1,7 @@
 # 📖 주식 정보, 맞춤형 투자 기업 분석 플랫폼
 
 ![alt text](https://github.com/Team-ticku/ticku_FE/raw/dev/26.PNG)
+<a href="https://youtu.be/pfMN6ZKARPs">Ticku 시연 영상 보러가기</a>
 
 ## 시작하기
 
